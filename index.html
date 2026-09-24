@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slike u PDF i PDF u slike</title>
+<meta name="description" content="Pretvori slike u jedan PDF (A4 ili veličina slike) ili PDF u PNG/JPG slike. Besplatno, u pregledniku, bez slanja datoteka.">
+<link rel="icon" href="zajednicko/logo.svg">
+<link rel="stylesheet" href="zajednicko/app-bonic.css">
+<style>
+  .kartice-nacina { margin-bottom: 16px; }
+  body:not(.u-slike) .samo-slike, body.u-slike .samo-pdf { display: none !important; }
+  .popis { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; margin-top: 14px; }
+  .sl { background: var(--plo); border: 1px solid var(--crta); border-radius: 12px; padding: 7px; display: flex; flex-direction: column; gap: 6px; cursor: grab; }
+  .sl.vuce { opacity: .35; } .sl.cilj { outline: 3px dashed var(--akcent); outline-offset: 2px; }
+  .sl .okvir { aspect-ratio: 1; display: grid; place-items: center; background: var(--polje); border-radius: 7px; overflow: hidden; }
+  .sl img, .sl canvas { max-width: 100%; max-height: 100%; transition: transform .2s; }
+  .sl .ime { font-size: 12px; color: var(--blijedo); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sl .alatke { display: flex; gap: 2px; }
+  .sl .alatke button { flex: 1; border: 0; background: var(--polje); border-radius: 7px; padding: 5px 0; cursor: pointer; color: var(--blijedo); display: grid; place-items: center; font-size: 15px; }
+  .sl .alatke button:hover { background: var(--akcent-meko); color: var(--akcent-jak); }
+  .sl .alatke .ik { width: 16px; height: 16px; }
+  .sl a.preuzmi { font-size: 12.5px; text-align: center; text-decoration: none; font-weight: 600; }
+  .postavke { display: flex; flex-direction: column; gap: 14px; }
+  .zrcalo { transform: scaleX(-1); }
+  .napredak { height: 6px; background: var(--polje); border-radius: 99px; overflow: hidden; }
+  .napredak div { height: 100%; width: 0; background: var(--akcent); transition: width .2s; }
+</style>
+</head>
+<body data-alat="slike-pdf" class="u-slike">
+<header class="ab-vrh"></header>
+
+<main class="ab-omot">
+  <section class="ab-uvod">
+    <span class="ab-ikona"><span data-ik="pdf"></span></span>
+    <div>
+      <h1>Slike ↔ PDF</h1>
+      <p>Složi fotografije ili skenove u jedan PDF, ili pretvori stranice PDF-a u slike. Sve se radi u tvom pregledniku — datoteke se nigdje ne šalju.</p>
+    </div>
+  </section>
+
+  <div class="seg kartice-nacina" role="radiogroup" aria-label="Smjer pretvorbe">
+    <label><input type="radio" name="smjer" value="slike" checked><span>Slike u PDF</span></label>
+    <label><input type="radio" name="smjer" value="pdf"><span>PDF u slike</span></label>
+  </div>
+
+  <!-- ============ SLIKE U PDF ============ -->
+  <div class="stupci sirok-lijevo samo-slike">
+    <section class="kartica">
+      <div class="dropzona" id="dropSlike"><span data-ik="slika"></span><b>Ubaci slike</b><span>JPG, PNG, WEBP, GIF — povlačenjem mijenjaš redoslijed</span></div>
+      <div class="popis" id="popisSlika"></div>
+    </section>
+    <section class="kartica postavke">
+      <h2>Postavke PDF-a</h2>
+      <div class="polje"><label for="velicina">Veličina stranice</label>
+        <select id="velicina"><option value="a4">A4 (210 × 297 mm)</option><option value="a5">A5 (148 × 210 mm)</option><option value="letter">Letter (216 × 279 mm)</option><option value="slika">Jednaka slici</option></select></div>
+      <div class="polje" id="poljeOrijentacija"><label for="orijentacija">Orijentacija</label>
+        <select id="orijentacija"><option value="auto">Automatski prema slici</option><option value="uspravno">Uspravno</option><option value="polozeno">Položeno</option></select></div>
+      <div class="polje" id="poljeMargina"><label for="margina">Margina</label>
+        <select id="margina"><option value="0">Bez margine</option><option value="10" selected>10 mm</option><option value="20">20 mm</option></select></div>
+      <div class="polje"><label for="kvaliteta">Kvaliteta slika</label>
+        <select id="kvaliteta"><option value="orig">Visoka (izvorna veličina)</option><option value="2000" selected>Dobra (do 2000 px) — manji PDF</option><option value="1200">Manja (do 1200 px) — za e-poštu</option></select></div>
+      <div class="polje"><label for="imePdf">Naziv datoteke</label><input id="imePdf" value="slike.pdf"></div>
+      <button type="button" class="gumb glavni veliki" id="napraviPdf" disabled><span data-ik="preuzmi"></span>Napravi PDF</button>
+      <div class="napredak" hidden id="napredakPdf"><div></div></div>
+    </section>
+  </div>
+
+  <!-- ============ PDF U SLIKE ============ -->
+  <div class="stupci sirok-lijevo samo-pdf">
+    <section class="kartica">
+      <div class="dropzona" id="dropPdf"><span data-ik="pdf"></span><b>Ubaci PDF</b><span>Svaka stranica postaje zasebna slika</span></div>
+      <p class="napomena" id="pdfInfo" style="margin-top:10px"></p>
+      <div class="popis" id="popisStranica"></div>
+    </section>
+    <section class="kartica postavke">
+      <h2>Postavke slika</h2>
+      <div class="polje"><label for="format">Format</label>
+        <select id="format"><option value="png">PNG (oštro, za tekst)</option><option value="jpg">JPG (manje datoteke, za fotografije)</option></select></div>
+      <div class="polje"><label for="dpi">Razlučivost</label>
+        <select id="dpi"><option value="72">72 dpi — zaslon</option><option value="150" selected>150 dpi — standard</option><option value="300">300 dpi — ispis</option></select></div>
+      <div class="polje"><label for="rasponPdf">Stranice <small>prazno = sve, npr. 1-3, 5</small></label><input id="rasponPdf" placeholder="sve"></div>
+      <button type="button" class="gumb glavni veliki" id="uSlike" disabled><span data-ik="preuzmi"></span>Pretvori i preuzmi ZIP</button>
+      <div class="napredak" hidden id="napredakSlike"><div></div></div>
+    </section>
+  </div>
+</main>
+
+<footer class="ab-dno"></footer>
+<script src="zajednicko/app-bonic.js"></script>
+<script src="lib/pdf.min.js"></script>
+<script src="lib/pdf-lib.min.js"></script>
+<script src="lib/jszip.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
